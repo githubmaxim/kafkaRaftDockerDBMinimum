@@ -1,0 +1,129 @@
+version: "3.5"
+
+volumes:
+  volume1:
+  volume2:
+  volume3:
+
+services:
+  kafka1:
+    image: bitnami/kafka:latest
+#    networks:   //создаваемую собственную сеть (отличную от "сети по умолчанию" создаваемой самой Kafka) везде отключил, т.к. потом забываю дописать ее во все новые блоки(с добавляемыми к запуску программами) и они начинают работать в "сети по умолчанию" и не видят блоки работающие в собственной сети. А так все работают в общей "сети по умолчанию" и нет проблем.
+#      - kafka-cluster
+    ports:
+      - '9094:9094'
+    environment:
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_NODE_ID=1
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka1:29093,2@kafka2:29093,3@kafka3:29093
+      - KAFKA_KRAFT_CLUSTER_ID=abcdefghijklmnopqrstuv
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:29092,CONTROLLER://:29093,EXTERNAL://:29094
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka1:29092,EXTERNAL://localhost:29094
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT
+    volumes:
+      - volume1:/bitnami/kafka1
+
+  kafka2:
+    image: bitnami/kafka:latest
+#    networks:
+#      - kafka-cluster
+    ports:
+      - '9095:9095'
+    environment:
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_CFG_NODE_ID=2
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka1:29093,2@kafka2:29093,3@kafka3:29093
+      - KAFKA_KRAFT_CLUSTER_ID=abcdefghijklmnopqrstuv
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:29092,CONTROLLER://:29093,EXTERNAL://:29095
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka2:29092,EXTERNAL://localhost:29095
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT
+    volumes:
+      - volume2:/bitnami/kafka2
+
+  kafka3:
+    image: bitnami/kafka:latest
+#    networks:
+#      - kafka-cluster
+    ports:
+      - '9096:9096'
+    environment:
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_CFG_NODE_ID=3
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka1:29093,2@kafka2:29093,3@kafka3:29093
+      - KAFKA_KRAFT_CLUSTER_ID=abcdefghijklmnopqrstuv
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:29092,CONTROLLER://:29093,EXTERNAL://:29096
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka3:29092,EXTERNAL://localhost:29096
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT
+    volumes:
+      - volume3:/bitnami/kafka3
+
+
+#!!!  PostgreSQL запускается и выводит строку "PostgreSQL_1  | 2023-12-16 12:11:48.030 UTC [1] LOG:  database system is ready to accept connections",
+#  При чем пишет, что время выполнения этого шага было до запуска любых действий с Kafka/Producer/Consumer.
+#  Но показывает ее почему-то только через 2 минуты после выполнения всех операций Consumer-ом.
+#  А проверить записал он что-то в БД или нет я не могу, т.к. не могу зайти на любые выбрасываемые наружу Docker-ом адреса любых программ.
+  PostgreSQL:
+    image: postgres:16-alpine
+#    image: postgres:latest //не работает, я так понял, что нужна версия с "alpine"
+#    networks:
+#      - kafka-cluster
+    environment:
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=postgres
+    ports:
+      - "5432:5432"
+
+
+# !!! Отключил т.к. не вижу ничего снаружи Docker-а, ни по адресу http://localhost:5050(как тут) ни любому другому http://localhost:**** для любой программы (UI и т.д.)
+  pgadmin:
+    container_name: pgadmin4_container
+    image: dpage/pgadmin4:latest
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: root
+    ports:
+      - "5050:80"
+
+
+  producer:
+    build:
+      context: .
+      dockerfile: producer/Dockerfile
+#    networks:
+#      - kafka-cluster
+    depends_on:
+      - kafka1
+      - kafka2
+      - kafka3
+    ports:
+      - 8080:8080
+
+
+  consumer:
+    build:
+      context: .
+      dockerfile: consumer/Dockerfile
+#    networks:
+#      - kafka-cluster
+    depends_on:
+      - producer
+      - PostgreSQL
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://PostgreSQL:5432/postgres
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=password
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+    ports:
+      - 8081:8080
+
+#networks:
+#  kafka-cluster:
+#    driver: bridge

@@ -1,0 +1,34 @@
+spring:
+  kafka:
+    bootstrap-servers: kafka1:29092, kafka2:29092, kafka3:29092
+
+    consumer:
+      group-id: "order-1"
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.ByteArrayDeserializer
+
+#  datasource:
+##    url: jdbc:postgresql://localhost:5432/forkafka?serverTimezone=UTC
+#    url: jdbc:postgresql://:::5432/orders_database
+##    url: jdbc:postgresql://localhost:15432/orders_database
+##    username: root
+#    username: username
+##    password: qwa12345
+#    password: password
+#
+#  jpa:
+#    show-sql: false
+#    open-in-view: false
+#    hibernate:
+##      ddl-auto: update
+##      ddl-auto: create-drop
+#      ddl-auto: none
+#    properties:
+#      hibernate:
+##        dialect: org.hibernate.dialect.PostgreSQL91Dialect
+#        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+
+topic:
+  send-order: msg
