@@ -1,67 +1,156 @@
 version: "3.5"
 
-volumes:
-  volume1:
-  volume2:
-  volume3:
+#Настройка для Bitnami
+#volumes:
+#  volume1:
+#  volume2:
+#  volume3:
 
 services:
+
+  #  Сработал образ от "confluentinc", а от "bintnami" начал вываливаться в ошибку памяти при
+  #  запуске потока для каждого брокера Kafka. Эта проблема решалась только загрузкой новой 20-й и
+  #  дальше версий Docker, но для них нужен Windows10 и младше
+
   kafka1:
-    image: bitnami/kafka:latest
-#    networks:   //создаваемую собственную сеть (отличную от "сети по умолчанию" создаваемой самой Kafka) везде отключил, т.к. потом забываю дописать ее во все новые блоки(с добавляемыми к запуску программами) и они начинают работать в "сети по умолчанию" и не видят блоки работающие в собственной сети. А так все работают в общей "сети по умолчанию" и нет проблем.
-#      - kafka-cluster
+    image: confluentinc/cp-kafka
+#    Если пишем "container_name", то в следующем проекте имена контейнеров не должны повторяться с этими
+#    container_name: kafka1
+    #    hostname: kafka1
     ports:
-      - '9094:9094'
+      - "9092:9092"
     environment:
-      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
-      - KAFKA_CFG_NODE_ID=1
-      - KAFKA_CFG_PROCESS_ROLES=controller,broker
-      - ALLOW_PLAINTEXT_LISTENER=yes
-      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka1:29093,2@kafka2:29093,3@kafka3:29093
-      - KAFKA_KRAFT_CLUSTER_ID=abcdefghijklmnopqrstuv
-      - KAFKA_CFG_LISTENERS=PLAINTEXT://:29092,CONTROLLER://:29093,EXTERNAL://:29094
-      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka1:29092,EXTERNAL://localhost:29094
-      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT
-    volumes:
-      - volume1:/bitnami/kafka1
+      KAFKA_NODE_ID: 1
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT'
+      KAFKA_LISTENERS: 'INTERNAL://kafka1:29092,CONTROLLER://kafka1:29093,EXTERNAL://0.0.0.0:9092'
+      KAFKA_ADVERTISED_LISTENERS: 'INTERNAL://kafka1:29092,EXTERNAL://localhost:9092'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'INTERNAL'
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka1:29093,2@kafka2:29093,3@kafka3:29093'
+      KAFKA_PROCESS_ROLES: 'broker,controller'
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      #      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+      CLUSTER_ID: 'abcdefghijklmnopqrstuv'
+    #      KAFKA_LOG_DIRS: '/tmp/kraft-combined-logs'
+
 
   kafka2:
-    image: bitnami/kafka:latest
-#    networks:
-#      - kafka-cluster
+    image: confluentinc/cp-kafka
+#    container_name: kafka2
+    #    hostname: kafka2
     ports:
-      - '9095:9095'
+      - "9093:9093"
     environment:
-      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
-      - KAFKA_CFG_PROCESS_ROLES=controller,broker
-      - ALLOW_PLAINTEXT_LISTENER=yes
-      - KAFKA_CFG_NODE_ID=2
-      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka1:29093,2@kafka2:29093,3@kafka3:29093
-      - KAFKA_KRAFT_CLUSTER_ID=abcdefghijklmnopqrstuv
-      - KAFKA_CFG_LISTENERS=PLAINTEXT://:29092,CONTROLLER://:29093,EXTERNAL://:29095
-      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka2:29092,EXTERNAL://localhost:29095
-      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT
-    volumes:
-      - volume2:/bitnami/kafka2
+      KAFKA_NODE_ID: 2
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT'
+      KAFKA_LISTENERS: 'INTERNAL://kafka2:29092,CONTROLLER://kafka2:29093,EXTERNAL://0.0.0.0:9093'
+      KAFKA_ADVERTISED_LISTENERS: 'INTERNAL://kafka2:29092,EXTERNAL://localhost:9093'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'INTERNAL'
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka1:29093,2@kafka2:29093,3@kafka3:29093'
+      KAFKA_PROCESS_ROLES: 'broker,controller'
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      #      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+      CLUSTER_ID: 'abcdefghijklmnopqrstuv'
+  #      KAFKA_LOG_DIRS: '/tmp/kraft-combined-logs'
 
   kafka3:
-    image: bitnami/kafka:latest
-#    networks:
-#      - kafka-cluster
+    image: confluentinc/cp-kafka
+#    container_name: kafka3
+    #    hostname: kafka3
     ports:
-      - '9096:9096'
+      - "9094:9094"
     environment:
-      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
-      - KAFKA_CFG_PROCESS_ROLES=controller,broker
-      - ALLOW_PLAINTEXT_LISTENER=yes
-      - KAFKA_CFG_NODE_ID=3
-      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka1:29093,2@kafka2:29093,3@kafka3:29093
-      - KAFKA_KRAFT_CLUSTER_ID=abcdefghijklmnopqrstuv
-      - KAFKA_CFG_LISTENERS=PLAINTEXT://:29092,CONTROLLER://:29093,EXTERNAL://:29096
-      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka3:29092,EXTERNAL://localhost:29096
-      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT
-    volumes:
-      - volume3:/bitnami/kafka3
+      KAFKA_NODE_ID: 3
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT'
+      KAFKA_LISTENERS: 'INTERNAL://kafka3:29092,CONTROLLER://kafka3:29093,EXTERNAL://0.0.0.0:9094'
+      KAFKA_ADVERTISED_LISTENERS: 'INTERNAL://kafka3:29092,EXTERNAL://localhost:9094'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'INTERNAL'
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka1:29093,2@kafka2:29093,3@kafka3:29093'
+      KAFKA_PROCESS_ROLES: 'broker,controller'
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      #      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+      CLUSTER_ID: 'abcdefghijklmnopqrstuv'
+  #      KAFKA_LOG_DIRS: '/tmp/kraft-combined-logs'
+
+  #  schema-registry:
+  #    image: confluentinc/cp-schema-registry
+  #    container_name: schema-registry
+  #    hostname: schema-registry
+  #    ports:
+  #      - "8081:8081"
+  #    environment:
+  #      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+  #      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: 'kafka1:29092,kafka2:29092,kafka3:29092'
+  #      SCHEMA_REGISTRY_LISTENERS: 'http://0.0.0.0:8081'
+  #    depends_on:
+  #      - kafka1
+  #      - kafka2
+  #      - kafka3
+
+
+
+  #Моя настройка Kafka от Bitnami вылетает на ошибку памяти
+#  kafka1:
+#    image: bitnami/kafka:latest
+##    networks:   //создаваемую собственную сеть (отличную от "сети по умолчанию" создаваемой самой Kafka) везде отключил, т.к. потом забываю дописать ее во все новые блоки(с добавляемыми к запуску программами) и они начинают работать в "сети по умолчанию" и не видят блоки работающие в собственной сети. А так все работают в общей "сети по умолчанию" и нет проблем.
+##      - kafka-cluster
+#    ports:
+#      - '9094:9094'
+#    environment:
+#      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+#      - KAFKA_CFG_NODE_ID=1
+#      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+#      - ALLOW_PLAINTEXT_LISTENER=yes
+#      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka1:29093,2@kafka2:29093,3@kafka3:29093
+#      - KAFKA_KRAFT_CLUSTER_ID=abcdefghijklmnopqrstuv
+#      - KAFKA_CFG_LISTENERS=PLAINTEXT://:29092,CONTROLLER://:29093,EXTERNAL://:29094
+#      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka1:29092,EXTERNAL://localhost:29094
+#      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT
+#    volumes:
+#      - volume1:/bitnami/kafka1
+#
+#  kafka2:
+#    image: bitnami/kafka:latest
+##    networks:
+##      - kafka-cluster
+#    ports:
+#      - '9095:9095'
+#    environment:
+#      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+#      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+#      - ALLOW_PLAINTEXT_LISTENER=yes
+#      - KAFKA_CFG_NODE_ID=2
+#      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka1:29093,2@kafka2:29093,3@kafka3:29093
+#      - KAFKA_KRAFT_CLUSTER_ID=abcdefghijklmnopqrstuv
+#      - KAFKA_CFG_LISTENERS=PLAINTEXT://:29092,CONTROLLER://:29093,EXTERNAL://:29095
+#      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka2:29092,EXTERNAL://localhost:29095
+#      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT
+#    volumes:
+#      - volume2:/bitnami/kafka2
+#
+#  kafka3:
+#    image: bitnami/kafka:latest
+##    networks:
+##      - kafka-cluster
+#    ports:
+#      - '9096:9096'
+#    environment:
+#      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+#      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+#      - ALLOW_PLAINTEXT_LISTENER=yes
+#      - KAFKA_CFG_NODE_ID=3
+#      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka1:29093,2@kafka2:29093,3@kafka3:29093
+#      - KAFKA_KRAFT_CLUSTER_ID=abcdefghijklmnopqrstuv
+#      - KAFKA_CFG_LISTENERS=PLAINTEXT://:29092,CONTROLLER://:29093,EXTERNAL://:29096
+#      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka3:29092,EXTERNAL://localhost:29096
+#      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT
+#    volumes:
+#      - volume3:/bitnami/kafka3
 
 
 #!!!  PostgreSQL запускается и выводит строку "PostgreSQL_1  | 2023-12-16 12:11:48.030 UTC [1] LOG:  database system is ready to accept connections",
@@ -82,15 +171,15 @@ services:
 
 
 # !!! Отключил т.к. не вижу ничего снаружи Docker-а, ни по адресу http://localhost:5050(как тут) ни любому другому http://localhost:**** для любой программы (UI и т.д.)
-  pgadmin:
-    container_name: pgadmin4_container
-    image: dpage/pgadmin4:latest
-    restart: always
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@admin.com
-      PGADMIN_DEFAULT_PASSWORD: root
-    ports:
-      - "5050:80"
+#  pgadmin:
+#    container_name: pgadmin4_container
+#    image: dpage/pgadmin4:latest
+#    restart: always
+#    environment:
+#      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+#      PGADMIN_DEFAULT_PASSWORD: root
+#    ports:
+#      - "5050:80"
 
 
   producer:
